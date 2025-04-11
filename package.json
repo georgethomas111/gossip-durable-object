@@ -3,13 +3,13 @@
   "type": "module",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "src/app.js",
   "scripts": {
     "test": "vitest run",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
     "start": "wrangler dev",
-    "node": "node app.js"
+    "node": "node src/app.js"
     
   },
   "keywords": [],
