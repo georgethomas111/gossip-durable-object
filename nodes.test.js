@@ -1,49 +1,55 @@
 // nodes.test.js
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { Nodes } from './nodes.js'
 
-vi.useFakeTimers()
-
-describe('Nodes', () => {
+describe('Nodes module', () => {
   let nodes
 
   beforeEach(() => {
     nodes = Nodes()
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2025-01-01T00:00:00Z'))
   })
 
-  it('adds a node', () => {
-    nodes.add('nodeA')
-    expect(nodes.available()).toContain('nodeA')
+
+  it('adds and retrieves a node with correct timestamp', () => {
+    nodes.checkin('alpha')
+    const available = nodes.available()
+    expect(available.length).toBe(1)
+    expect(available[0][0]).toBe('alpha')
+    expect(available[0][1]).toBe(new Date('2025-01-01T00:00:00Z').toUTCString())
   })
 
-  it('checkin adds new node if not present', () => {
-    nodes.checkin('nodeB')
-    expect(nodes.available()).toContain('nodeB')
+  it('removes nodes that exceed TTL', () => {
+    nodes.checkin('alpha')
+
+    // Advance time beyond TTL
+    vi.advanceTimersByTime(61 * 1000)
+
+    const available = nodes.available()
+    expect(available).toEqual([])
   })
 
-  it('checkin updates existing node timestamp', () => {
-    nodes.add('nodeC')
-    const original = nodes._getNodeMap().get('nodeC').checkinTime
+  it('refreshes checkin time if node already exists', () => {
+    nodes.checkin('alpha')
+    vi.advanceTimersByTime(30 * 1000)
+    nodes.checkin('alpha') // Refresh checkin
 
+    vi.advanceTimersByTime(31 * 1000) // Total 61s since original, but only 31s since refresh
+    const available = nodes.available()
+    expect(available.length).toBe(1)
+    expect(available[0][0]).toBe('alpha')
+  })
+
+  it('returns multiple nodes with correct timestamps', () => {
+    nodes.checkin('node1')
     vi.advanceTimersByTime(1000)
-    nodes.checkin('nodeC')
-    const updated = nodes._getNodeMap().get('nodeC').checkinTime
+    nodes.checkin('node2')
 
-    expect(updated).toBeGreaterThan(original)
-  })
-
-  it('removes node after TTL expires', () => {
-    nodes._setTTL(5000)
-    nodes.add('nodeD')
-
-    vi.advanceTimersByTime(6000)
-    expect(nodes.available()).not.toContain('nodeD')
-  })
-
-  it('deleteNode manually removes node', () => {
-    nodes.add('nodeE')
-    nodes.deleteNode('nodeE')
-    expect(nodes.available()).not.toContain('nodeE')
+    const result = nodes.available()
+    expect(result.length).toBe(2)
+    expect(result[0][0]).toBe('node1')
+    expect(result[1][0]).toBe('node2')
   })
 })
 

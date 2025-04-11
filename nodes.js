@@ -12,12 +12,17 @@ export function Nodes() {
 
     available() {
       const currentTime = Date.now()
+      let a = []
       for (let [name, node] of nodeMap) {
         if ((currentTime - node.checkinTime) > ttl) {
           this.deleteNode(name)
+	  continue
         }
+
+        let d = new Date(node.checkinTime)
+	a.push([name, d.toUTCString()])
       }
-      return Array.from(nodeMap.keys())
+      return a
     },
 
     checkin(name) {
@@ -30,10 +35,6 @@ export function Nodes() {
     deleteNode(name) {
       nodeMap.delete(name)
     },
-
-    // internal access for testing
-    _getNodeMap: () => nodeMap,
-    _setTTL: (newTTL) => { ttl = newTTL }
   }
 }
 
