@@ -1,44 +1,39 @@
+// nodes.js (now ES6)
+let nodeIdCounter = 0
 
-const Nodes = function() {
-  let nodeNames = []
-  let nodeIdCounter = 0
+export function Nodes() {
   const nodeMap = new Map()
+  let ttl = 60 * 1000 // 1 minute in ms
 
   return {
-    add: function(name) {
-      if (nodeNames.includes(name)) {
-        throw new Error(`Node with name "${name}" already exists`)
-      }
-
-      nodeIdCounter++
-      nodeMap.set(name, nodeIdCounter)
-      nodeNames.push(name)
-
+    add(name) {
+      nodeMap.set(name, { id: nodeIdCounter++, checkinTime: Date.now() })
     },
 
-    available: function() {
+    available() {
+      const currentTime = Date.now()
+      for (let [name, node] of nodeMap) {
+        if ((currentTime - node.checkinTime) > ttl) {
+          this.deleteNode(name)
+        }
+      }
       return Array.from(nodeMap.keys())
     },
 
-    deleteNode: function(name) {
+    checkin(name) {
       if (!nodeMap.has(name)) {
-        throw new Error(`Node with name "${name}" does not exist`)
+        this.add(name)
       }
+      nodeMap.get(name).checkinTime = Date.now()
+    },
 
-      const nodeId = nodeMap.get(name)
+    deleteNode(name) {
       nodeMap.delete(name)
-      nodeNames.splice(nodeNames.indexOf(name), 1)
-    }
+    },
+
+    // internal access for testing
+    _getNodeMap: () => nodeMap,
+    _setTTL: (newTTL) => { ttl = newTTL }
   }
 }
 
-// Example usage:
-const nodes = new Nodes()
-nodes.add('Node1')
-nodes.add('Node2')
-
-console.log("Saved nodes =", nodes.available()) // Output: ["Node1", "Node2"]
-console.log("Deleting node1")
-nodes.deleteNode('Node1') // Output: Deleted node Node1 with ID 1
-
-console.log(nodes.available()) // Output: ["Node2"]
