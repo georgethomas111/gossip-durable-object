@@ -8,7 +8,9 @@
     "test": "vitest run",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
-    "start": "wrangler dev"
+    "start": "wrangler dev",
+    "node": "node app.js"
+    
   },
   "keywords": [],
   "author": "",
